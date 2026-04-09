@@ -29,6 +29,7 @@ appsettings.Development.json
 cert/
 .env
 **/Data/ProgressDbContextFactory.cs
+**/Data/CertificateDbContextFactory.cs
 
 # Logs and Temps
 *.log
