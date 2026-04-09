@@ -28,6 +28,7 @@ appsettings.Development.json
 *.secret.json
 cert/
 .env
+**/Data/ProgressDbContextFactory.cs
 
 # Logs and Temps
 *.log

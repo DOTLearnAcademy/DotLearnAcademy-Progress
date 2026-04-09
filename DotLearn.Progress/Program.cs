@@ -1,5 +1,9 @@
+using Amazon.SQS;
 using DotLearn.Progress.Data;
 using DotLearn.Progress.Middleware;
+using DotLearn.Progress.Repositories;
+using DotLearn.Progress.Services;
+using Kralizek.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Amazon;
@@ -13,15 +17,29 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// AWS Secrets Manager
-builder.Configuration.AddSecretsManager(region: RegionEndpoint.APSoutheast2);
+// AWS Secrets Manager (Only in non-Development environments)
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddSecretsManager(region: RegionEndpoint.APSoutheast2);
+}
 
 // Add services to the container.
-var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options =>
+var connStr = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddDbContext<ProgressDbContext>(options =>
     options.UseSqlServer(connStr));
 
 builder.Services.AddHealthChecks().AddSqlServer(connStr);
+
+builder.Services.AddScoped<IProgressRepository, ProgressRepository>();
+builder.Services.AddScoped<IProgressService, ProgressService>();
+
+builder.Services.AddDefaultAWSOptions(new Amazon.Extensions.NETCore.Setup.AWSOptions
+{
+    Region = Amazon.RegionEndpoint.APSoutheast2
+});
+builder.Services.AddAWSService<IAmazonSQS>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
