@@ -1,8 +1,10 @@
+using Amazon.S3;
 using Amazon.SQS;
 using DotLearn.Progress.Data;
 using DotLearn.Progress.Middleware;
 using DotLearn.Progress.Repositories;
 using DotLearn.Progress.Services;
+using DotLearn.Progress.Workers;
 using Kralizek.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -23,7 +25,7 @@ if (!builder.Environment.IsDevelopment())
     builder.Configuration.AddSecretsManager(region: RegionEndpoint.APSoutheast2);
 }
 
-// Add services to the container.
+// ── Progress Service ──────────────────────────────────────────────
 var connStr = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -35,12 +37,27 @@ builder.Services.AddHealthChecks().AddSqlServer(connStr);
 builder.Services.AddScoped<IProgressRepository, ProgressRepository>();
 builder.Services.AddScoped<IProgressService, ProgressService>();
 
+// ── Certificate Service ───────────────────────────────────────────
+var certConnStr = builder.Configuration.GetConnectionString("CertificateConnection")
+    ?? connStr; // fallback to same DB server if not specified separately
+
+builder.Services.AddDbContext<CertificateDbContext>(options =>
+    options.UseSqlServer(certConnStr));
+
+builder.Services.AddScoped<ICertificateRepository, CertificateRepository>();
+builder.Services.AddScoped<ICertificateService, CertificateService>();
+builder.Services.AddHttpClient<InternalHttpService>();
+builder.Services.AddHostedService<EnrollmentCompletedConsumer>();
+
+// ── AWS ───────────────────────────────────────────────────────────
 builder.Services.AddDefaultAWSOptions(new Amazon.Extensions.NETCore.Setup.AWSOptions
 {
     Region = Amazon.RegionEndpoint.APSoutheast2
 });
 builder.Services.AddAWSService<IAmazonSQS>();
+builder.Services.AddAWSService<IAmazonS3>();
 
+// ── ASP.NET Core ──────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
