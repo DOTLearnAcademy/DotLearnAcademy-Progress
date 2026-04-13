@@ -5,10 +5,8 @@ using DotLearn.Progress.Middleware;
 using DotLearn.Progress.Repositories;
 using DotLearn.Progress.Services;
 using DotLearn.Progress.Workers;
-using Kralizek.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using Amazon;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +20,7 @@ builder.Host.UseSerilog();
 // AWS Secrets Manager (Only in non-Development environments)
 if (!builder.Environment.IsDevelopment())
 {
-    // builder.Configuration.AddSecretsManager(region: RegionEndpoint.APSoutheast2);
+    // // builder.Configuration.AddSecretsManager(region: Amazon.RegionEndpoint.APSoutheast2);
 }
 
 // ── Progress Service ──────────────────────────────────────────────
@@ -103,3 +101,5 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+
