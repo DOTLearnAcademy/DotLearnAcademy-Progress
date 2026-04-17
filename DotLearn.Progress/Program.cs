@@ -4,6 +4,9 @@ using DotLearn.Progress.Data;
 using DotLearn.Progress.Middleware;
 using DotLearn.Progress.Repositories;
 using DotLearn.Progress.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using DotLearn.Progress.Workers;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -60,8 +63,34 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Authentication & Authorization (Placeholder)
-builder.Services.AddAuthentication();
+// Authentication & Authorization — manual JWKS loading
+var jwksUri = builder.Configuration["Auth:JwksUri"]
+    ?? "http://auth/auth/.well-known/jwks.json";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = "dotlearn-auth",
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+            {
+                using var http = new HttpClient();
+                var json = http.GetStringAsync(jwksUri).GetAwaiter().GetResult();
+                var jwks = new JsonWebKeySet(json);
+                return jwks.GetSigningKeys();
+            },
+            NameClaimType = "sub",
+            RoleClaimType = ClaimTypes.Role
+        };
+    });
+
 builder.Services.AddAuthorization();
 
 // CORS — DOT-24 Security Lockdown
