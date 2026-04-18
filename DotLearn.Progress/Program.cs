@@ -47,7 +47,7 @@ builder.Services.AddDbContext<CertificateDbContext>(options =>
 
 builder.Services.AddScoped<ICertificateRepository, CertificateRepository>();
 builder.Services.AddScoped<ICertificateService, CertificateService>();
-builder.Services.AddHttpClient<InternalHttpService>();
+builder.Services.AddHttpClient<InternalHttpService>().AddHttpMessageHandler<DotLearn.Progress.Middleware.CorrelationIdDelegatingHandler>();
 builder.Services.AddHostedService<EnrollmentCompletedConsumer>();
 
 // ── AWS ───────────────────────────────────────────────────────────
@@ -60,6 +60,8 @@ builder.Services.AddAWSService<IAmazonS3>();
 
 // ── ASP.NET Core ──────────────────────────────────────────────────
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<DotLearn.Progress.Middleware.CorrelationIdDelegatingHandler>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -26,7 +26,7 @@ public class InternalHttpService
     {
         try
         {
-            var url = $"{_config["Services:CourseService"]}/internal/courses/{courseId}";
+            var url = $"{_config["Services:CourseService"]}/api/courses/{courseId}";
             var response = await _httpClient.GetFromJsonAsync<CourseInternalDto>(url);
             return response?.Title ?? "Unknown Course";
         }
